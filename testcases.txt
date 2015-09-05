@@ -1,0 +1,72 @@
+more < ls.txt
+more < ls.txt shell.c
+ls > ls.txt
+more ls.txt
+ls > ls.txt ../
+more ls.txt
+ls> ls2.txt
+more >ls2.txt
+more ls2.txt
+ls | more
+ls | more | grep 'c'
+ls -U -l | sort | more | grep 'c'
+nano &
+nano
+emacs &
+ls &
+more ls.txt &
+sleep 20 &
+sleep 20 &
+sleep 20 &
+sleep 20 &
+sleep 20 &
+exit
+ps -ef
+ls
+ls -l
+ls -l -U
+ls -la
+ls bad.dir
+more filename
+ls -ef
+echo fish
+echo text 100
+echo ls -l -a
+echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+echo $HOME
+echo $PWD
+echo $HOME $SHELL $PWD
+cd ../
+ls
+cd .
+ls
+cd
+ls
+cd
+ls
+cd /
+ls
+cd /usr/local/src
+ls
+etime pwd
+etime sleep 5
+limits ls
+limits cat hello_world.c
+more <
+< file
+<
+ls >
+> file
+>
+|
+ls |
+| more
+ls & | more &
+ls & | more
+ls > & file
+more < & file
+cd bad.dir
+echo $PW
+echo $HOME $SHELL $BAD
+exit
