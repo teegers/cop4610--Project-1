@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-void my_setup() {}
-
 void my_prompt()
 {
    printf("%s", getenv("USER"));
@@ -17,6 +15,7 @@ void my_prompt()
 
 char* my_read()
 {
+   char* res = NULL;
    char in[255];
    fgets(in, sizeof in, stdin);
 
@@ -25,20 +24,21 @@ char* my_read()
 	in[strlen(in)-1] = in[strlen(in)];
    }
 
-   char* res = (char*)malloc(strlen(in)+1);
+   res = (char*)malloc(strlen(in)+1);
    strcpy(res, in);
    return res;
 }
 
 char * getWord(char * lineCpy, int num)
 {
-   char line[strlen(lineCpy)+1];
-   strcpy(line, lineCpy);
-
    int wordNumber = 0;
-   char * pch;
-   char * result;
+   char line[strlen(lineCpy)+1];
+   char * pch = NULL;
+   char * result = NULL;
+   
+   strcpy(line, lineCpy);
    pch = strtok(line, " ");
+
 
    while(pch != NULL)
    {
@@ -61,7 +61,6 @@ char * getWord(char * lineCpy, int num)
 int getNumWords(char* line)
 {
    int count, i;
-   char lastChar;
    count = 0;
    if (strlen(line) <= 0)
 	return count;
@@ -126,6 +125,8 @@ int addSpaces(char* line)
 
 char** my_parse(char* line)
 {
+   int i, count, numWords;
+   char ** cmd = NULL;
 
    /* remove leading whitespace */
    while (line[0] == ' ')
@@ -145,8 +146,6 @@ char** my_parse(char* line)
    }
 
    /* remove extra intermediate whitespace */
-   int i;
-   int count;
 
    for (i = 0; i < strlen(line); i++)
    {
@@ -162,9 +161,9 @@ char** my_parse(char* line)
    }
 
    /* set each word to separate string array */
-   int numWords = getNumWords(line);
+   numWords = getNumWords(line);
 
-   char ** cmd = (char**)malloc(sizeof(char*) * (numWords + 1));
+   cmd = (char**)malloc(sizeof(char*) * (numWords + 1));
 
    for (i = 0; i < numWords; i++)
 	cmd[i] = getWord(line, i);
@@ -176,15 +175,15 @@ char** my_parse(char* line)
    return cmd;
 }
 
-void my_execute(char** cmd)
+int my_execute(char** cmd)
 {
-
+   int exit = 0;
    if (strcmp(cmd[0], "exit")==0)
    {
 	if (strcmp(cmd[1], "NULL")==0)
 	{
 	   printf("Closing shell..\n");
-	   exit(0);
+	   exit = 1;
 	}
 	else
 	{
@@ -196,6 +195,7 @@ void my_execute(char** cmd)
 	printf("You got it");
    }
 
+   return exit;
 }
 
 void free2D(char ** cmd)
@@ -224,21 +224,27 @@ void print2D(char** cmd)
    }
    printf("\n");
 }
-
 int main()
 {
-   my_prompt();
+   char * line = NULL;
+   char ** cmd = NULL;
+   int exit = 0;
 
-   char * line = my_read();
-
-   /*printf("%s\n", line);*/
-
-   char ** cmd = my_parse(line);
-
-   /*print2D(cmd);*/
-
-   my_execute(cmd);
-
-   my_free(line, cmd);
+   
+   while(exit==0){
+	my_prompt();
+	line = my_read();
+   
+	/*printf("%s\n", line);*/
+   
+	cmd = my_parse(line);
+   
+	/*print2D(cmd);*/
+   
+	exit = my_execute(cmd);
+   
+	my_free(line, cmd);
+   }
+        
    return 0;
 }
