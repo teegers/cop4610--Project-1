@@ -162,37 +162,50 @@ char** my_parse(char* line)
 
    /* set each word to separate string array */
    numWords = getNumWords(line);
-
    cmd = (char**)malloc(sizeof(char*) * (numWords + 1));
-
-   for (i = 0; i < numWords; i++)
+   for (i = 0; i < numWords; i++){
 	cmd[i] = getWord(line, i);
-   
+   }
    /*printf("%s\n", getWord(line, 1));*/
-
    cmd[numWords] = "NULL";
+
 
    return cmd;
 }
 
 int my_execute(char** cmd)
 {
+   int i = 0;
    int exit = 0;
+   int executed = 0;
+
    if (strcmp(cmd[0], "exit")==0)
    {
 	if (strcmp(cmd[1], "NULL")==0)
 	{
 	   printf("Closing shell..\n");
 	   exit = 1;
-	}
-	else
-	{
+	}else{
 	   printf("exit: Expression Syntax.\n");
 	}
+	executed = 1;
+   }else	if (strcmp(cmd[0], "echo") == 0){
+	for (i = 1; strcmp(cmd[i],"NULL") != 0; i++){
+		if(i>1){ printf(" "); }
+		printf(cmd[i]);
+	}
+	 printf("\n");
+	executed = 1;
+   }else	if(strcmp(cmd[0], "cd")==0){
+   	/* change working directory */
+   	executed = 1;
    }
-   if (strcmp(cmd[0], "echo") == 0)
-   {
-	printf("You got it");
+
+	/* include check for symbols */
+
+   if(executed == 0){
+	/* if no command is found */
+   	printf("Command not found.\n");
    }
 
    return exit;
@@ -201,7 +214,7 @@ int my_execute(char** cmd)
 void free2D(char ** cmd)
 {
    int i;
-   for (i = 0; cmd[i] != "NULL"; i++)
+   for (i = 0; strcmp(cmd[i],"NULL") != 0; i++)
 	free(cmd[i]);
 
    free(cmd);
@@ -216,10 +229,10 @@ void my_free(char* line, char** cmd)
 void print2D(char** cmd)
 {
    int i;
-   for (i = 0; cmd[i] != "NULL"; i++)
+   for (i = 0; strcmp(cmd[i],"NULL") != 0; i++)
    {
 	printf("%s", cmd[i]);
-	if (cmd[i+1] != "NULL")
+	if (strcmp(cmd[i+1],"NULL") != 0)
 	   printf("_");
    }
    printf("\n");
