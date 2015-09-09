@@ -197,8 +197,15 @@ int my_execute(char** cmd)
 	 printf("\n");
 	executed = 1;
    }else	if(strcmp(cmd[0], "cd")==0){
-   	/* change working directory */
-   	executed = 1;
+	executed = 1;
+	 if(strcmp(cmd[1],"NULL") == 0){
+        	/*  change to  $HOME directory */
+	}else	if(strcmp(cmd[2],"NULL") != 0){
+		printf("error: too many arguments. \n");
+	}else{
+	/* Change working directory */
+	}
+	
    }
 
 	/* include check for symbols */
