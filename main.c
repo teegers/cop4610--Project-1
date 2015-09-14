@@ -1,6 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+typedef struct {
+   char* argv[80];
+   int argc;
+} UserArgs;
+
+typedef struct dirList {
+    char* pathName;
+    struct dirList* next;
+} Directory;
 
 void my_prompt()
 {
@@ -16,7 +27,7 @@ void my_prompt()
 char* my_read()
 {
    char* res = NULL;
-   char in[255];
+   char in[256];
    fgets(in, sizeof in, stdin);
 
    if (in[strlen(in)-1] == '\n')
@@ -26,10 +37,12 @@ char* my_read()
 
    res = (char*)malloc(strlen(in)+1);
    strcpy(res, in);
+
+
    return res;
 }
 
-char * getWord(char * lineCpy, int num)
+char* getWord(char * lineCpy, int num)
 {
    int wordNumber = 0;
    char line[strlen(lineCpy)+1];
@@ -123,10 +136,14 @@ int addSpaces(char* line)
    return 0;
 }
 
-char** my_parse(char* line)
+UserArgs* my_parse(char* line)
 {
-   int i, count, numWords;
-   char ** cmd = NULL;
+   int i, count;
+   char* current = NULL;
+   UserArgs* args = NULL;
+
+   args =  malloc(sizeof(UserArgs));
+   args->argc = 0;
 
    /* remove leading whitespace */
    while (line[0] == ' ')
@@ -161,109 +178,218 @@ char** my_parse(char* line)
    }
 
    /* set each word to separate string array */
-   numWords = getNumWords(line);
-   cmd = (char**)malloc(sizeof(char*) * (numWords + 1));
-   for (i = 0; i < numWords; i++){
-	cmd[i] = getWord(line, i);
-   }
-   /*printf("%s\n", getWord(line, 1));*/
-   cmd[numWords] = "NULL";
 
-
-   return cmd;
+   current = strtok(line," ");
+   while(current != NULL) {
+        args->argv[args->argc] = strdup(current);
+        args->argc += 1;
+        current = strtok(NULL, " ");
+	/* calling tokenizer with null argument resumes to the previous location */
+    }
+   args->argv[args->argc+1] = NULL;
+   return args;
 }
 
-int my_execute(char** cmd)
+char* dirString(Directory* root) {
+    Directory* node = NULL;
+    char buffer[256];
+    char* result = NULL;
+        
+    buffer[0] = '\0';
+    node = root;
+        
+    while(node != 0) {
+        sprintf(buffer, "%s/%s", buffer, (*node).pathName);
+        node = node->next;
+    }
+   
+    result = (char*)malloc(strlen(buffer)+1);
+    strcpy(result, buffer);
+    
+    return result;
+}
+
+void pushDir(Directory* root, char* dir) {
+    Directory* node = NULL;
+   
+    if(root->pathName == 0) {
+        root->pathName = dir;
+        return;
+    }
+    node = root;
+   
+    /* Moves to most recent directory */
+    while( node->next != 0 ) {
+        node = node->next;
+    }
+    node->next = malloc(sizeof(Directory));
+    node = node->next;
+    node->pathName = dir;
+}
+    
+void popDir(Directory* root) {
+    Directory* node = NULL;
+           
+    node = root;
+    if(root->next == NULL) {
+        node->pathName = NULL;
+        free(node->pathName);
+        return;
+    }
+   
+    /* verify we dont delete the root */
+    while( node->next->next != 0 ) {
+        node = node->next;
+    }
+    node->next = NULL;
+    free(node->next);
+}
+
+char* parsePath(char* arg) {
+    Directory* root = NULL;
+    char path[4096]; 
+    char* current = NULL;
+    root = malloc(sizeof(Directory));
+    
+    if(arg[0] == '/') {
+        return arg;
+    }else if(arg[0] == '.' && arg[1] == '/') {
+        /* ./ :expands to working directory */
+        sprintf(path, "%s/%s", getenv("PWD"), arg+1);
+    }else if(arg[0] == '~') {
+        /* ~ :expands to the $HOME directory */
+        sprintf(path, "%s/%s", getenv("HOME"), arg+1);
+    }else{
+        /* expands to the Relative path */
+        sprintf(path, "%s/%s", getenv("PWD"), arg);
+    }
+        
+    current = strtok(path, "/");
+    while(current != NULL) { 
+        if(strcmp(current, "..") == 0) {
+            popDir(root);
+        }else if(strcmp(current, ".") != 0) {
+            pushDir(root, current);
+        }
+    
+        current = strtok(NULL, "/");
+    }
+    
+    return dirString(root);
+}
+
+int my_execute(UserArgs* uargs)
 {
    int i = 0;
-   int exit = 0;
-   int executed = 0;
+   char* path;
 
-   if (strcmp(cmd[0], "exit")==0)
+   if (strcmp(uargs->argv[0], "exit")==0)
    {
-	if (strcmp(cmd[1], "NULL")==0)
-	{
+	if (uargs->argc == 1){
 	   printf("Closing shell..\n");
-	   exit = 1;
 	}else{
 	   printf("exit: Expression Syntax.\n");
 	}
-	executed = 1;
-   }else	if (strcmp(cmd[0], "echo") == 0){
-	for (i = 1; strcmp(cmd[i],"NULL") != 0; i++){
+	return 1;
+   }else	if (strcmp(uargs->argv[0], "echo") == 0){
+	for (i = 1; i<uargs->argc+1; i++){
 		if(i>1){ printf(" "); }
-		printf(cmd[i]);
+		printf(uargs->argv[i]);
 	}
-	 printf("\n");
-	executed = 1;
-   }else	if(strcmp(cmd[0], "cd")==0){
-	executed = 1;
-	 if(strcmp(cmd[1],"NULL") == 0){
-        	/*  change to  $HOME directory */
-	}else	if(strcmp(cmd[2],"NULL") != 0){
-		printf("error: too many arguments. \n");
-	}else{
-	/* Change working directory */
-	}
+	printf("\n");
+	return 0;
+   }else if(strcmp(uargs->argv[0], "cd")==0){
+	if(uargs->argc == 1) {
+            uargs->argv[uargs->argc] = "~/";
+            uargs->argc+=1;
+            uargs->argv[uargs->argc] = NULL;
+        }
+	path = parsePath(uargs->argv[1]);
+	/*if we need to check if directory exists, check below value for access*/
+        setenv("PWD", path);
+        
+        return 0;	
+   }else if(strcmp(uargs->argv[0], "clear") == 0){
+	/* Source: 
+	stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-c-c
+	*/
+   	fprintf(stdout, "\033[2J\033[1;1H");
+        rewind(stdout);
+        return 0;
+   }else if(strcmp(uargs->argv[0], "time")==0){
+        if(uargs->argc == 1) {
+            fprintf(stderr, "ERROR: Syntax Error.\n");
+            return 0;
+        }
 	
+	/*
+	TODO:
+	t1 = get current time
+	shift all arguments left
+	complete rest of arguments
+	t2 = get current time
+	execution time = t2-t1	
+	*/
+
+        return 0;
+   }else if(strcmp(uargs->argv[0], "viewproc")==0){
+	if(uargs->argc == 1) {
+            fprintf(stderr, "ERROR: no file argument found.\n");
+            return 0;
+        }
+   /*
+	TODO:
+	PERFORM ALL NECESSARY ACTIONS
+   */
    }
 
-	/* include check for symbols */
+/*
+   if(uargs->argv[0][0] == '/') {
+        int pid;
+        pid = fork();
 
-   if(executed == 0){
-	/* if no command is found */
-   	printf("Command not found.\n");
-   }
+        if(pid == 0) {
+            if(execv(uargs->argv[0], uargs->argv)) {
+                fprintf(stdout, "execv failed with error %d %s\n", errno, strerror(errno));
+            }
+            exit(0);
+        }else { wait(&pid); }
 
-   return exit;
+        return 0;
+    }
+*/
+
+   /* if no command is found */
+   fprintf(stderr, "Command not found.\n");
+   return 0;
 }
 
-void free2D(char ** cmd)
+void my_free(char* line, UserArgs* uargs)
 {
-   int i;
-   for (i = 0; strcmp(cmd[i],"NULL") != 0; i++)
-	free(cmd[i]);
-
-   free(cmd);
-}
-
-void my_free(char* line, char** cmd)
-{
-   free2D(cmd);
+   free(uargs);
    free(line);
 }
 
-void print2D(char** cmd)
-{
-   int i;
-   for (i = 0; strcmp(cmd[i],"NULL") != 0; i++)
-   {
-	printf("%s", cmd[i]);
-	if (strcmp(cmd[i+1],"NULL") != 0)
-	   printf("_");
-   }
-   printf("\n");
-}
+void printArgs(UserArgs* args){ 
+   int i = 0;
+   for(i = 0; i<args->argc; i++) {  
+        printf(args->argv[i]);
+	printf(" ");
+    }
+} 
+
 int main()
 {
+   UserArgs* userArgs = NULL;
    char * line = NULL;
-   char ** cmd = NULL;
    int exit = 0;
-
    
    while(exit==0){
 	my_prompt();
-	line = my_read();
-   
-	/*printf("%s\n", line);*/
-   
-	cmd = my_parse(line);
-   
-	/*print2D(cmd);*/
-   
-	exit = my_execute(cmd);
-   
-	my_free(line, cmd);
+	line = my_read();   
+	userArgs = my_parse(line);
+	exit = my_execute(userArgs);
+	my_free(line, userArgs);
    }
         
    return 0;
