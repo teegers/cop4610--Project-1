@@ -286,17 +286,17 @@ int my_execute(UserArgs* uargs)
    if (strcmp(uargs->argv[0], "exit")==0)
    {
 	if (uargs->argc == 1){
-	   printf("Closing shell..\n");
+	   printf("%s","Closing shell..\n");
 	}else{
-	   printf("exit: Expression Syntax.\n");
+	   printf("%s","exit: Expression Syntax.\n");
 	}
 	return 1;
    }else	if (strcmp(uargs->argv[0], "echo") == 0){
 	for (i = 1; i<uargs->argc+1; i++){
-		if(i>1){ printf(" "); }
-		printf(uargs->argv[i]);
+		if(i>1){ printf("%s"," "); }
+		printf("%s",uargs->argv[i]);
 	}
-	printf("\n");
+	printf("%s","\n");
 	return 0;
    }else if(strcmp(uargs->argv[0], "cd")==0){
 	if(uargs->argc == 1) {
@@ -366,25 +366,35 @@ int my_execute(UserArgs* uargs)
 
 void my_free(char* line, UserArgs* uargs)
 {
+   int i;
+   for(i=0; i<uargs->argc; i++){
+	uargs->argv[i] = '\0';
+   }
    free(uargs);
    free(line);
 }
 
 void printArgs(UserArgs* args){ 
-   int i = 0;
-   for(i = 0; i<args->argc; i++) {  
-        printf(args->argv[i]);
-	printf(" ");
+   int i;
+   for(i = 0; i<80; i++) {
+	if(args->argv[i] != '\0'){  
+            printf("%s",args->argv[i]);
+	    printf("%s"," ");
+	}else{
+	    return;
+	}
     }
 } 
 
 int main()
 {
-   UserArgs* userArgs = NULL;
-   char * line = NULL;
+   UserArgs* userArgs;
+   char * line;
    int exit = 0;
    
    while(exit==0){
+	line = NULL;
+	userArgs = NULL;
 	my_prompt();
 	line = my_read();   
 	userArgs = my_parse(line);
