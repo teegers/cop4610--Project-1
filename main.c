@@ -65,7 +65,7 @@ char* getWord(char * lineCpy, int num)
 	   return result;
 	}
 
-	pch = strtok(NULL, " ");
+	/*pch = strtok(NULL, " ");*/
 
 	wordNumber++;
    }
@@ -236,7 +236,7 @@ char* dirString(Directory* root) {
     node = root;
         
     while(node != 0) {
-        sprintf(buffer, "%s/%s", buffer, (*node).pathName);
+        sprintf(buffer, "%s/%s", buffer, (*node).pathName); 
         node = node->next;
     }
    
