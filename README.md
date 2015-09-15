@@ -1,27 +1,27 @@
 # cop4610--Project-1
 
 <p>Member 1: Andreas Adolfsson</p>
-Member 2: Tegan Comb
-Member 3: Justin Duhaime
+<p>Member 2: Tegan Comb</p>
+<p>Member 3: Justin Duhaime</p>
 
-p1-.tar contents:
-README
-report.txt
-main.c // main implementation
-makefile
+##p1-.tar contents:
+* README
+* report.txt
+* main.c // main implementation
+* makefile
 
-Completed using: linprog
+##Completed using: linprog
 
-To build:
-$> make run
+##To build:
+<p>$> make run</p>
 
-To clean:
-$> make clean
+##To clean:
+<p>$> make clean</p>
 
-Known Bugs 
-1. Sometimes has a segmentation fault on commands only after running the makefile on linprog. Is fixed by switching to a different machine like linprog2
+##Known Bugs 
+<p>1. Sometimes has a segmentation fault on commands only after running the makefile on linprog. Is fixed by switching to a different machine like linprog2</p>
 
-To do:
+##To do:
 - Finish execution
 - I/O Redirection
 - Piping 
