@@ -1,6 +1,6 @@
 # cop4610--Project-1
 
-Member 1: Andreas Adolfsson
+<p>Member 1: Andreas Adolfsson</p>
 Member 2: Tegan Comb
 Member 3: Justin Duhaime
 
