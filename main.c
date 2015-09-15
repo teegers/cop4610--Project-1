@@ -329,7 +329,7 @@ int my_execute(UserArgs* uargs)
 	}
 	return 1;
    }else	if (strcmp(uargs->argv[0], "echo") == 0){
-	for (i = 1; i<uargs->argc+1; i++){
+	for (i = 1; i<uargs->argc; i++){
 		if(i>1){ printf("%s"," "); }
 		printf("%s",uargs->argv[i]);
 	}
