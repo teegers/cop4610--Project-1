@@ -3,7 +3,6 @@
 #include <string.h>
 #include <time.h>
 
-
 typedef struct {
    char* argv[80];
    int argc;
@@ -178,11 +177,55 @@ UserArgs* my_parse(char* line)
 	   }
 	}
    }
-   
-   args = my_env(line);
 
+   args = my_env(line);
+   
    return args;
 }
+
+UserArgs* my_env(char* line)
+{
+	char* current = NULL;
+	char* letter = NULL;
+	char* str = NULL; 
+	UserArgs* args = NULL;
+
+	args =  malloc(sizeof(UserArgs));
+	current =  malloc(sizeof(UserArgs));
+	str =  malloc(sizeof(UserArgs));
+	args->argc = 0;
+	
+	/* set each word to separate string array */
+	
+   current = strtok(line," ");  /* Puts one word from line into current */
+   while(current != NULL) {  
+	letter = current[0];
+	    if(letter == '$'){
+			str = current + 1; 
+			
+			if(getenv(str) == NULL){
+				printf("%s", str); 
+				printf(": Undefined variable ");
+				current = strtok(NULL, " ");
+			}
+			else{
+				args->argv[args->argc] = getenv(str);
+				args->argc += 1;
+				current = strtok(NULL, " ");
+			}
+		}
+		else{
+			args->argv[args->argc] = strdup(current);
+			args->argc += 1;
+			current = strtok(NULL, " ");
+		}
+	/* calling tokenizer with null argument resumes to the previous location */
+    }
+   args->argv[args->argc+1] = NULL;
+   
+   return args;
+}
+
 
 char* dirString(Directory* root) {
     Directory* node = NULL;
@@ -280,17 +323,17 @@ int my_execute(UserArgs* uargs)
    if (strcmp(uargs->argv[0], "exit")==0)
    {
 	if (uargs->argc == 1){
-	   printf("Closing shell..\n");
+	   printf("%s","Closing shell..\n");
 	}else{
-	   printf("exit: Expression Syntax.\n");
+	   printf("%s","exit: Expression Syntax.\n");
 	}
 	return 1;
    }else	if (strcmp(uargs->argv[0], "echo") == 0){
 	for (i = 1; i<uargs->argc+1; i++){
-		if(i>1){ printf(" "); }
-		printf("%s", uargs->argv[i]);
+		if(i>1){ printf("%s"," "); }
+		printf("%s",uargs->argv[i]);
 	}
-	printf("\n");
+	printf("%s","\n");
 	return 0;
    }else if(strcmp(uargs->argv[0], "cd")==0){
 	if(uargs->argc == 1) {
@@ -356,71 +399,37 @@ int my_execute(UserArgs* uargs)
    return 0;
 }
 
-UserArgs* my_env(char* line)
-{
-	char* current = NULL;
-	char* letter = NULL;
-	char* str = NULL; 
-	UserArgs* args = NULL;
-
-	args =  malloc(sizeof(UserArgs));
-	current =  malloc(sizeof(UserArgs));
-	str =  malloc(sizeof(UserArgs));
-	args->argc = 0;
-	
-	/* set each word to separate string array */
-	
-   current = strtok(line," ");  /* Puts one word from line into current */
-   while(current != NULL) {  
-	letter = current[0];
-	    if(letter == '$'){
-			str = current + 1; 
-			
-			if(getenv(str) == NULL){
-				printf("%s", str); 
-				printf(": Undefined variable ");
-			
-				current = strtok(NULL, " ");
-			}
-			else{
-				args->argv[args->argc] = getenv(str);
-				args->argc += 1;
-				current = strtok(NULL, " ");
-			}
-		}
-		else{
-			args->argv[args->argc] = strdup(current);
-			args->argc += 1;
-			current = strtok(NULL, " ");
-		}
-	/* calling tokenizer with null argument resumes to the previous location */
-    }
-   args->argv[args->argc+1] = NULL;
-   
-   return args;
-}
-
 void my_free(char* line, UserArgs* uargs)
 {
+   int i;
+   for(i=0; i<uargs->argc; i++){
+	uargs->argv[i] = '\0';
+   }
    free(uargs);
    free(line);
 }
 
 void printArgs(UserArgs* args){ 
-   int i = 0;
-   for(i = 0; i<args->argc; i++) {  
-       printf("%s", args->argv[i]);
-	printf(" ");
+   int i;
+   for(i = 0; i<80; i++) {
+	if(args->argv[i] != '\0'){  
+            printf("%s",args->argv[i]);
+	    printf("%s"," ");
+	}else{
+	    return;
+	}
     }
 } 
 
 int main()
 {
-   UserArgs* userArgs = NULL;
-   char * line = NULL;
+   UserArgs* userArgs;
+   char * line;
    int exit = 0;
    
    while(exit==0){
+	line = NULL;
+	userArgs = NULL;
 	my_prompt();
 	line = my_read();   
 	userArgs = my_parse(line);
