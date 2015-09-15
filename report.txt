@@ -1,0 +1,90 @@
+============================  
+Problem statement: 
+============================
+
+Design and implement a basic shell interface that supports input/output redirection, pipes, background processing, and a series of built in functions. The shell should be robust and its features should adhere
+to the operational semantics of the bash shell. 
+
+ ============================ 
+Steps taken to solve problem 
+ ============================
+
+1. Research shells and how they worked
+2. Implemented parsing and the prompt 
+3. Created basic execution
+4. Developed directory handling
+5. Added handling for environmental variables 
+
+============================ 
+Assumptions 
+============================
+ 
+It is assumed that no more than three pipes will appear in a single line. We do not expect that we will have to handle globs, regular expressions, special characters, quotes, and escaped characters. It is also 
+expected that the user input will be no more than two hundred and fifty five characters, that pipes and I/O redirection will not occur together and that multiple redirections of the same type will not appear. We 
+assume that we will not need to implement auto-complete and that there will be no need for support of built in commands that are not specified. 
+
+============================ 
+System calls 
+============================
+
+============================ 
+Problems 
+============================
+
+
+============================ 
+Known Bugs 
+============================
+
+============================ 
+Division of Labor 
+============================
+
+Andreas Adolfsson
+- Path resolution
+- Execution
+Tegan Comb 
+- Environmental variables 
+- I/O redirection 
+- Documentation
+Justin Duhaime
+- Parsing 
+- Prompt 
+- Built in command
+
+============================
+ Slack Days Used 
+============================
+
+============================ 
+Log 
+============================
+
+9/15/15
+Finished handling of environmental variables
+
+9/14/15
+Changed the 2d array for argument access to be a struct instead 
+
+9/12/15
+Directory handling completed
+
+9/8/15
+Parsing completed
+
+9/6/15
+Print 2d and free function written
+
+9/5/15
+Parsing mostly completed
+
+9/3/15
+Prompt completed
+
+8/28/15
+Project Assigned 
+
+
+============================
+Additional Features
+============================
