@@ -185,20 +185,26 @@ UserArgs* my_parse(char* line)
 
 UserArgs* my_env(char* line)
 {
+	
 	char* current = NULL;
 	char* letter = NULL;
 	char* str = NULL; 
 	UserArgs* args = NULL;
+	
+	int temp = strlen(line);
+	int let = 1; 
 
-	args =  malloc(sizeof(UserArgs));
-	current =  malloc(sizeof(UserArgs));
-	str =  malloc(sizeof(UserArgs));
+	args =  malloc(sizeof(UserArgs));  /* same as line 146 */
+	current =  malloc(temp);
+	str =  malloc(temp);
+	letter = malloc(let);
 	args->argc = 0;
 	
 	/* set each word to separate string array */
 	
    current = strtok(line," ");  /* Puts one word from line into current */
-   while(current != NULL) {  
+   while(current != NULL) { 
+   
 	letter = current[0];
 	    if(letter == '$'){
 			str = current + 1; 
@@ -222,6 +228,14 @@ UserArgs* my_env(char* line)
 	/* calling tokenizer with null argument resumes to the previous location */
     }
    args->argv[args->argc+1] = NULL;
+   
+   /* Free up memory */
+   current = NULL;
+   str = NULL;
+   letter = NULL;
+   free(current);
+   free(str);
+   free(letter);
    
    return args;
 }
