@@ -366,8 +366,8 @@ int my_execute(UserArgs* uargs)
         	setenv("PWD", buffer, 1);
 	}else{
             fprintf(stderr,
-                "%s ERROR: cannot access %s: No such file or directory.\n",
-                uargs->argv[0], buffer);
+                "%s: No such file or directory.\n",
+                uargs->argv[1], buffer);
 	}
         return 0;	
 
