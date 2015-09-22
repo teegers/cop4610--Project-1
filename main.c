@@ -303,8 +303,8 @@ char* parsePath(char* arg) {
     root = malloc(sizeof(Directory));
     
     if(arg[0] == '/') {
-        return arg;
-    }else if(arg[0] == '.' && arg[1] == '/') {
+        return arg; 
+    }else if(arg[0] == '.' && arg[1] == '/') { 
         /* ./ :expands to working directory */
         sprintf(path, "%s/%s", getenv("PWD"), arg+1);
     }else if(arg[0] == '~') {
@@ -350,14 +350,18 @@ int my_execute(UserArgs* uargs)
 	printf("%s","\n");
 	return 0;
    }else if(strcmp(uargs->argv[0], "cd")==0){
-	if(uargs->argc == 1) {
-            uargs->argv[uargs->argc] = "~/";
-            uargs->argc+=1;
-            uargs->argv[uargs->argc] = NULL;
+	if(uargs->argc > 2){
+		printf("cd: Too many arguments.\n");
+		return 0;
+	}
+	if(uargs->argc == 1) { /* if cd is the only command then... */
+            uargs->argv[uargs->argc] = "~/"; /* set the second argument to home? */
+            uargs->argc+=1; /* add one to the count since there are now two arguments */
+            uargs->argv[uargs->argc] = NULL; /* the next argument should be null since it is the end */
         }
-	path = parsePath(uargs->argv[1]);
+	path = parsePath(uargs->argv[1]);  /* pass the second argument to the parsePath function */
 	/*if we need to check if directory exists, check below value for access*/
-        setenv("PWD", path, 0);
+        setenv("PWD", path, 1);
         
         return 0;	
    }else if(strcmp(uargs->argv[0], "clear") == 0){
