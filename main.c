@@ -1,19 +1,52 @@
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
 
 typedef struct {
    char* argv[80];
    int argc;
 } UserArgs;
-
 typedef struct dirList {
     char* pathName;
     struct dirList* next;
 } Directory;
 
+void my_prompt();
+char* my_read();
 UserArgs* my_env(char* line);
+UserArgs* my_parse(char* line);
+char* getWord(char* lineCpy, int num);
+int getNumWords(char* line);
+int addSpaces(char* line);
+char* dirString(Directory* root);
+void pushDir(Directory* root, char* dir);
+void popDir(Directory* root);  
+char* parsePath(char* arg);
+int my_execute(UserArgs* uargs);
+void my_free(char* line, UserArgs* uargs);
+void printArgs(UserArgs* args);
+
+int main()
+{
+   UserArgs* userArgs;
+   char* line;
+   int exit = 0;
+   
+   while(exit==0){
+	line = NULL;
+	userArgs = NULL;
+	
+        line =  my_read();   
+	userArgs = my_parse(line);
+	exit = my_execute(userArgs);
+	my_free(line, userArgs);
+   }
+        
+   return 0;
+}
 
 void my_prompt()
 {
@@ -22,28 +55,23 @@ void my_prompt()
    printf("%s", getenv("MACHINE"));
    printf(":");
    printf("%s", getenv("PWD"));
-
    printf("=>");
 }
-
 char* my_read()
 {
    char* res = NULL;
    char in[256];
-   fgets(in, sizeof in, stdin);
 
+   my_prompt();
+   fgets(in, sizeof in, stdin);
    if (in[strlen(in)-1] == '\n')
    {
 	in[strlen(in)-1] = in[strlen(in)];
    }
-
    res = (char*)malloc(strlen(in)+1);
    strcpy(res, in);
-
-
    return res;
 }
-
 char* getWord(char * lineCpy, int num)
 {
    int wordNumber = 0;
@@ -53,26 +81,19 @@ char* getWord(char * lineCpy, int num)
    
    strcpy(line, lineCpy);
    pch = strtok(line, " ");
-
-
    while(pch != NULL)
    {
 	if (wordNumber == num)
 	{
 	   result = (char*)malloc(strlen(pch)+1);
 	   strcpy(result, pch);
-
 	   return result;
 	}
-
 	/*pch = strtok(NULL, " ");*/
-
 	wordNumber++;
    }
-
    return result;
 }
-
 int getNumWords(char* line)
 {
    int count, i;
@@ -81,24 +102,19 @@ int getNumWords(char* line)
 	return count;
    else
 	count = 1;
-
    for (i = 0; i < strlen(line); i++)
    {
 	if (line[i] == ' ')
 	   count++;
    }
-
    return count;
 }
-
 int addSpaces(char* line)
 {
    int i;
    int k;
-
    char cpy[strlen(line+1)];
    strcpy(cpy, line);
-
    for (i = 0; i < strlen(line); i++)
    {
 	if (line[i] == '<' || line[i] == '>'
@@ -106,11 +122,9 @@ int addSpaces(char* line)
 	{
 	   if (line[i+1] != ' ' && line[i+1] != '\0')
 	   {
-
 		free(line);
 		line  = (char*)malloc(strlen(cpy)+2);
 		strcpy(line, cpy);
-
 		for(k=strlen(cpy); k > i; k--)
 		{
 		   line[k+1] = line[k];
@@ -123,13 +137,10 @@ int addSpaces(char* line)
 		free(line);
 		line = (char*)malloc(strlen(cpy)+2);
 		strcpy(line, cpy);
-
-
 		for(k=strlen(cpy); k >= i; k--)
 		{
 		   line[k+1] = line[k];
 		}
-
 		line[i] = ' ';
 		return 1;
 	   }
@@ -137,15 +148,12 @@ int addSpaces(char* line)
    }
    return 0;
 }
-
 UserArgs* my_parse(char* line)
 {
    int i, count;
    UserArgs* args = NULL;
-
    args =  malloc(sizeof(UserArgs));
    args->argc = 0;
-
    /* remove leading whitespace */
    while (line[0] == ' ')
    {
@@ -153,18 +161,14 @@ UserArgs* my_parse(char* line)
 	for (i = 0; i < strlen(line); i++)
 	   line[i] = line[i+1];
    }
-
    /* add spaces where they need to go */
    while(addSpaces(line));
-
    /* remove trailing whitespace */
    while (line[strlen(line)-1] == ' ')
    {
    	line[strlen(line)-1] = line[strlen(line)];
    }
-
    /* remove extra intermediate whitespace */
-
    for (i = 0; i < strlen(line); i++)
    {
 	while(line[i]==' ' && line[i+1]==' ')
@@ -177,12 +181,10 @@ UserArgs* my_parse(char* line)
 	   }
 	}
    }
-
    args = my_env(line);
    
    return args;
 }
-
 UserArgs* my_env(char* line)
 {
 	
@@ -193,7 +195,6 @@ UserArgs* my_env(char* line)
 	
 	int temp = strlen(line);
 	int let = 1; 
-
 	args =  malloc(sizeof(UserArgs));  /* same as line 146 */
 	current =  malloc(temp);
 	str =  malloc(temp);
@@ -239,8 +240,6 @@ UserArgs* my_env(char* line)
    
    return args;
 }
-
-
 char* dirString(Directory* root) {
     Directory* node = NULL;
     char buffer[256];
@@ -259,7 +258,6 @@ char* dirString(Directory* root) {
     
     return result;
 }
-
 void pushDir(Directory* root, char* dir) {
     Directory* node = NULL;
    
@@ -295,7 +293,6 @@ void popDir(Directory* root) {
     node->next = NULL;
     free(node->next);
 }
-
 char* parsePath(char* arg) {
     Directory* root = NULL;
     char path[4096]; 
@@ -303,8 +300,8 @@ char* parsePath(char* arg) {
     root = malloc(sizeof(Directory));
     
     if(arg[0] == '/') {
-        return arg; 
-    }else if(arg[0] == '.' && arg[1] == '/') { 
+        return arg;
+    }else if(arg[0] == '.' && arg[1] == '/') {
         /* ./ :expands to working directory */
         sprintf(path, "%s/%s", getenv("PWD"), arg+1);
     }else if(arg[0] == '~') {
@@ -328,11 +325,14 @@ char* parsePath(char* arg) {
     
     return dirString(root);
 }
-
 int my_execute(UserArgs* uargs)
 {
+   double t1,t2;
    int i = 0;
    char* path;
+   char c, buffer[256];
+   struct timeval time;
+   FILE* proc;
 
    if (strcmp(uargs->argv[0], "exit")==0)
    {
@@ -354,16 +354,23 @@ int my_execute(UserArgs* uargs)
 		printf("cd: Too many arguments.\n");
 		return 0;
 	}
-	if(uargs->argc == 1) { /* if cd is the only command then... */
-            uargs->argv[uargs->argc] = "~/"; /* set the second argument to home? */
-            uargs->argc+=1; /* add one to the count since there are now two arguments */
-            uargs->argv[uargs->argc] = NULL; /* the next argument should be null since it is the end */
+	if(uargs->argc == 1) {
+            uargs->argv[uargs->argc] = "~/";
+            uargs->argc+=1;
+            uargs->argv[uargs->argc] = NULL;
         }
-	path = parsePath(uargs->argv[1]);  /* pass the second argument to the parsePath function */
-	/*if we need to check if directory exists, check below value for access*/
-        setenv("PWD", path, 1);
-        
+	path = parsePath(uargs->argv[1]);
+	sprintf(buffer, "%s", path);
+	
+	if(access(buffer, F_OK) == 0){
+        	setenv("PWD", buffer, 1);
+	}else{
+            fprintf(stderr,
+                "%s ERROR: cannot access %s: No such file or directory.\n",
+                uargs->argv[0], buffer);
+	}
         return 0;	
+
    }else if(strcmp(uargs->argv[0], "clear") == 0){
 	/* Source: 
 	stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-c-c
@@ -377,46 +384,61 @@ int my_execute(UserArgs* uargs)
             return 0;
         }
 	
-	/*
-	TODO:
-	t1 = get current time
-	shift all arguments left
-	complete rest of arguments
-	t2 = get current time
-	execution time = t2-t1	
-	*/
+	gettimeofday(&time, NULL);
+	t1 = time.tv_sec+(time.tv_usec/1000000.0);
+	
+	for(i = 1; i < uargs->argc; i++) {
+        	strcpy(uargs->argv[i-1], uargs->argv[i]);
+	}
+	(uargs->argc)--;
+	uargs->argv[uargs->argc] = NULL;
+	my_execute(uargs);
 
+	gettimeofday(&time, NULL);
+        t2 = time.tv_sec+(time.tv_usec/1000000.0); 
+
+	printf("excution time: ");
+	printf("%G",t2-t1);
+	printf("\n");
+	
         return 0;
    }else if(strcmp(uargs->argv[0], "viewproc")==0){
 	if(uargs->argc == 1) {
             fprintf(stderr, "ERROR: no file argument found.\n");
             return 0;
         }
-   /*
-	TODO:
-	PERFORM ALL NECESSARY ACTIONS
-   */
+	sprintf(buffer, "/proc/%s", uargs->argv[1]);
+        proc = fopen(buffer, "r");
+
+        if(proc == NULL) {
+	    fprintf(stderr, "ERROR: viewproc: cannot access proc/%s: No such file or directory.\n",
+	    uargs->argv[1]);
+        }else{
+            c = fgetc(proc);
+            while(c != EOF) {
+                fputc(c, stdout);
+                c = fgetc(proc);
+            }
+        }	
+	return 0;
    }
 
-/*
    if(uargs->argv[0][0] == '/') {
         int pid;
         pid = fork();
         if(pid == 0) {
             if(execv(uargs->argv[0], uargs->argv)) {
-                fprintf(stdout, "execv failed with error %d %s\n", errno, strerror(errno));
+                fprintf(stdout, "ERROR: execv failed");
             }
             exit(0);
-        }else { wait(&pid); }
+        }else {	wait(&pid);	}
         return 0;
     }
-*/
 
    /* if no command is found */
    fprintf(stderr, "Command not found.\n");
    return 0;
 }
-
 void my_free(char* line, UserArgs* uargs)
 {
    int i;
@@ -426,7 +448,6 @@ void my_free(char* line, UserArgs* uargs)
    free(uargs);
    free(line);
 }
-
 void printArgs(UserArgs* args){ 
    int i;
    for(i = 0; i<80; i++) {
@@ -437,23 +458,4 @@ void printArgs(UserArgs* args){
 	    return;
 	}
     }
-} 
-
-int main()
-{
-   UserArgs* userArgs;
-   char * line;
-   int exit = 0;
-   
-   while(exit==0){
-	line = NULL;
-	userArgs = NULL;
-	my_prompt();
-	line = my_read();   
-	userArgs = my_parse(line);
-	exit = my_execute(userArgs);
-	my_free(line, userArgs);
-   }
-        
-   return 0;
 }

@@ -19,7 +19,7 @@
 <p>$> make clean</p>
 
 ###Known Bugs 
-<p>1. Sometimes has a segmentation fault on commands only after running the makefile on linprog. Is fixed by switching to a different machine like linprog2</p>
+<p>1. Sometimes has a segmentation fault when running the makefile if -ansi flag is included</p>
 
 ###To do:
 - Finish execution
