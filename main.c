@@ -196,9 +196,9 @@ UserArgs* my_env(char* line)
 	int temp = strlen(line);
 	int let = 1; 
 	args =  malloc(sizeof(UserArgs));  /* same as line 146 */
-	current =  malloc(temp);
-	str =  malloc(temp);
-	letter = malloc(let);
+	current =   (char*)malloc(temp);
+	str =  (char*)malloc(temp);
+	letter = (char*)malloc(let);
 	args->argc = 0;
 	
 	/* set each word to separate string array */
