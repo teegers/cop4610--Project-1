@@ -405,11 +405,6 @@ int my_execute(UserArgs* uargs)
 	if(access(buffer, F_OK) == 0){
         	setenv("PWD", buffer, 1);
 	}else{
-		if(contains(uargs, '<', '>', '|', '&'))
-		{
-			my_redir(uargs);
-			return 0; 
-		}
             fprintf(stderr,
                 "%s: XXX or directory.\n",
                 uargs->argv[1], buffer);
@@ -467,11 +462,13 @@ stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-
         }
 
 	return 0;
-   }else if (!contains(uargs, '<', '>', '|', '&'))
+   }
+   
+   if (!contains(uargs, '<', '>', '|', '&'))
    {
-	   parse_cmd(uargs, 0);
+	   parse_cmd(uargs);
 	   
-   }else{ /* for some reasone doesn't go into this for > */
+   }else{ 
 	   my_redir(uargs);
 	   return 0;
    }
@@ -509,7 +506,7 @@ void my_redir(UserArgs* line)
 
 /* =============================================== */
 
-int parse_cmd(UserArgs* uargs)
+void parse_cmd(UserArgs* uargs)
 {
 	int status;
 	pid_t pid = fork();
@@ -518,7 +515,7 @@ int parse_cmd(UserArgs* uargs)
 	if (pid == -1)
 	{
 	   printf("Error in creation of child process");
-	   exit(1);
+	   return(0);
 	}
 	else if (pid == 0)
 	{
@@ -551,7 +548,7 @@ int parse_cmd(UserArgs* uargs)
 		   uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
 		   strcpy(uargs->argv[0], cmdC);
 		   
-		   return 1; 
+		   break; 
 	   	}
 	
 	   	pch = strtok(NULL, ":");
@@ -561,7 +558,7 @@ int parse_cmd(UserArgs* uargs)
 	else 
 	{
 	   waitpid(pid, &status, 0);
-	   return 0;
+	   return 0; 
 	}
 	
 	/* if no command is found */
@@ -573,45 +570,75 @@ int parse_cmd(UserArgs* uargs)
 
 void my_io(UserArgs* uargs, int i)
 {
-	
+ 
    /* input redirection */ 
    if (strcmp(uargs->argv[i], "<")==0)
    { 
+
+	   struct stat stat_buf;
 		
 	   /* loop to get a string with ALL $PATH variables */
+	   char * pch = NULL;
+	   char * cmd = NULL;
 	   char cmdC[strlen(uargs->argv[0]) + 1];
 	   char path[1000];
 	   
 	   strcpy(path, getenv("PATH"));
-	   
-	   int result = parse_cmd(uargs);
-	  
-	   if(result == 1)
+
+	   strcpy(cmdC, uargs->argv[0]);
+
+	   int cmdLen = strlen(uargs->argv[0]);
+	   pch = strtok(path, ":");
+	   while (pch != NULL)
 	   {
-		  pid_t pid = fork();
-			
-	      if(pid == 0)
-		  {
+	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
+   	   	strcpy(cmd, pch);
+	   	strcat(cmd, "/");
+	   	strcat(cmd, cmdC);
+	   	cmd[strlen(pch)+cmdLen+ 1] = '\0';
+
+	   	free(uargs->argv[0]);
+	   	uargs->argv[0] = (char*)malloc(strlen(cmd)+1);
+	   	strcpy(uargs->argv[0], cmd);
 		
-			  int in = open(uargs->argv[i + 1], O_RDONLY);
-			  
-			  close(STDIN_FILENO);
-			  
-			  dup(in);	
-			  close(in);
-			  
-			  if(execv(uargs->argv[0], uargs->argv) != -1)
+		stat(uargs->argv[0], &stat_buf); 
+		int fd = S_ISREG(stat_buf.st_mode);
+
+	   	if(fd == 1)
+	   	{
+			pid_t pid2 = fork(); 
+			
+			  if(pid2 == 0)
 			  {
-					   free(uargs->argv[0]);
-					   exit(0);
+				  char *more_args[] = {uargs->argv[0], NULL}; 
+				  int in = open(uargs->argv[i + 1], O_RDONLY);
+				  
+				  close(STDIN_FILENO);
+				  
+				  dup(in);	
+				  close(in);
+				  
+				  execv(uargs->argv[0], more_args);
+				 
+				  free(uargs->argv[0]);
+				  free(cmd);
+				  uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
+				  strcpy(uargs->argv[0], cmdC);
+				  exit(0);
+				 
+				 
+			  }else if(pid2 > 0){
+				  waitpid(pid2, NULL, 0);
+			  }else{
+				  printf("error message");
 			  }
-				 
-				 
-		   }else if(pid > 0){ waitpid(pid, NULL, 0);}
+			  
+		   break;
+	   	}
 	
-					 
-		}  
-	  
+	   	pch = strtok(NULL, ":");
+	   	free(cmd);
+	   }   
 	}
 }
 
