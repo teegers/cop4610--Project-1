@@ -469,77 +469,17 @@ stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-
 	return 0;
    }else if (!contains(uargs, '<', '>', '|', '&'))
    {
-	int status;
-	pid_t pid = fork();
-	
-	if (pid == -1)
-	{
-	   printf("Error in creation of child process");
-	   exit(1);
-	}
-	else if (pid == 0)
-	{
-
-	   /* loop to get a string with ALL $PATH variables */
-	   char * pch = NULL;
-	   char * cmd = NULL;
-	   char cmdC[strlen(uargs->argv[0]) + 1];
-
-	   strcpy(cmdC, uargs->argv[0]);
-
-	   int cmdLen = strlen(uargs->argv[0]);
-	   pch = strtok(getenv("PATH"), ":");
-	   while (pch != NULL)
-	   {
-	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
-   	   	strcpy(cmd, pch);
-	   	strcat(cmd, "/");
-	   	strcat(cmd, cmdC);
-	   	cmd[strlen(pch)+cmdLen+ 1] = '\0';
-
-	   	free(uargs->argv[0]);
-	   	uargs->argv[0] = (char*)malloc(strlen(cmd)+1);
-	   	strcpy(uargs->argv[0], cmd);
-
-	   	if (execv(uargs->argv[0], uargs->argv) != -1)
-	   	{
-		   
-		   free(uargs->argv[0]);
-		   free(cmd);
-		   uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
-		   strcpy(uargs->argv[0], cmdC);
-
-		   exit(0);
-	   	}
-	
-	   	pch = strtok(NULL, ":");
-	   	free(cmd);
-	   }
-	}
-	else 
-	{
-	   waitpid(pid, &status, 0);
-	   return 0;
-	}
+	   parse_cmd(uargs, 0);
+	   
    }else{ /* for some reasone doesn't go into this for > */
 	   my_redir(uargs);
 	   return 0;
    }
    
    if(uargs->argv[0][0] == '/') {
-        int pid;
-        pid = fork();
-        if(pid == 0) {
-            if(execv(uargs->argv[0], uargs->argv) == -1) {
-                fprintf(stdout, "ERROR: execv failed");
-            }
-            exit(0);
-        }else {	wait(&pid);	}
-        return 0;
+        parse_cmd(uargs);
     }
 
-   /* if no command is found */
-   fprintf(stderr, "Command not found.\n");
    return 0;
 }
 
@@ -569,24 +509,28 @@ void my_redir(UserArgs* line)
 
 /* =============================================== */
 
-void my_io(UserArgs* uargs, int i)
+int parse_cmd(UserArgs* uargs)
 {
-   if (strcmp(uargs->argv[i], "<")==0)
-   { 
-	   struct stat stat_buf;
-		
+	int status;
+	pid_t pid = fork();
+	
+	
+	if (pid == -1)
+	{
+	   printf("Error in creation of child process");
+	   exit(1);
+	}
+	else if (pid == 0)
+	{
 	   /* loop to get a string with ALL $PATH variables */
 	   char * pch = NULL;
 	   char * cmd = NULL;
 	   char cmdC[strlen(uargs->argv[0]) + 1];
-	   char path[1000];
-	   
-	   strcpy(path, getenv("PATH"));
-
 	   strcpy(cmdC, uargs->argv[0]);
+	 
 
 	   int cmdLen = strlen(uargs->argv[0]);
-	   pch = strtok(path, ":");
+	   pch = strtok(getenv("PATH"), ":");
 	   while (pch != NULL)
 	   {
 	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
@@ -598,49 +542,77 @@ void my_io(UserArgs* uargs, int i)
 	   	free(uargs->argv[0]);
 	   	uargs->argv[0] = (char*)malloc(strlen(cmd)+1);
 	   	strcpy(uargs->argv[0], cmd);
-		
-		stat(uargs->argv[0], &stat_buf);
-		int fd = S_ISREG(stat_buf.st_mode);
 
-	   	if(fd == 1)
+	   	if (execv(uargs->argv[0], uargs->argv) != -1)
 	   	{
-			pid_t pid = fork(); 
-			
-			  if(pid == 0)
-			  {
-				  char *more_args[] = {uargs->argv[0], NULL}; 
-				  int in = open(uargs->argv[i + 1], O_RDONLY);
-				  
-				  close(STDIN_FILENO);
-				  
-				  dup(in);	
-				  close(in);
-				  
-				  if(execv(uargs->argv[0], uargs->argv) != -1)
-				  {
-					   free(uargs->argv[0]);
-					   free(cmd);
-					   uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
-					   strcpy(uargs->argv[0], cmdC);
-					   exit(0);
-				  }
-				 
-				 
-			  }else if(pid > 0){
-				  waitpid(pid, NULL, 0);
-			  }else{
-				  printf("error message");
-			  }
-			  
-		   break;
+		   
+		   free(uargs->argv[0]);
+		   free(cmd);
+		   uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
+		   strcpy(uargs->argv[0], cmdC);
+		   
+		   return 1; 
 	   	}
 	
 	   	pch = strtok(NULL, ":");
 	   	free(cmd);
-	   }   
+	   }
+	}
+	else 
+	{
+	   waitpid(pid, &status, 0);
+	   return 0;
+	}
+	
+	/* if no command is found */
+    fprintf(stderr, "Command not found.\n");
+}
+
+
+/* =============================================== */
+
+void my_io(UserArgs* uargs, int i)
+{
+	
+   /* input redirection */ 
+   if (strcmp(uargs->argv[i], "<")==0)
+   { 
+		
+	   /* loop to get a string with ALL $PATH variables */
+	   char cmdC[strlen(uargs->argv[0]) + 1];
+	   char path[1000];
+	   
+	   strcpy(path, getenv("PATH"));
+	   
+	   int result = parse_cmd(uargs);
 	  
+	   if(result == 1)
+	   {
+		  pid_t pid = fork();
+			
+	      if(pid == 0)
+		  {
+		
+			  int in = open(uargs->argv[i + 1], O_RDONLY);
+			  
+			  close(STDIN_FILENO);
+			  
+			  dup(in);	
+			  close(in);
+			  
+			  if(execv(uargs->argv[0], uargs->argv) != -1)
+			  {
+					   free(uargs->argv[0]);
+					   exit(0);
+			  }
+				 
+				 
+		   }else if(pid > 0){ waitpid(pid, NULL, 0);}
+	
+					 
+		}  
 	  
-   }
+	}
 }
 
 /* =============================================== */
