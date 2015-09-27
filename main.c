@@ -570,7 +570,76 @@ void parse_cmd(UserArgs* uargs)
 
 void my_io(UserArgs* uargs, int i)
 {
- 
+   /* output redirection */ 
+   if (strcmp(uargs->argv[i], ">")==0)
+   { 
+	   char * real_cmd = uargs->argv[0];
+		
+	   struct stat stat_buf;
+		
+	   /* loop to get a string with ALL $PATH variables */
+	   char * pch = NULL;
+	   char * cmd = NULL;
+	   char cmdC[strlen(uargs->argv[0]) + 1];
+	   char path[1000];
+	   
+	   strcpy(path, getenv("PATH"));
+
+	   strcpy(cmdC, uargs->argv[0]);
+
+	   int cmdLen = strlen(uargs->argv[0]);
+	   pch = strtok(path, ":");
+	   while (pch != NULL)
+	   {
+	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
+   	   	strcpy(cmd, pch);
+	   	strcat(cmd, "/");
+	   	strcat(cmd, cmdC);
+	   	cmd[strlen(pch)+cmdLen+ 1] = '\0';
+
+	   	free(uargs->argv[0]);
+	   	uargs->argv[0] = (char*)malloc(strlen(cmd)+1);
+	   	strcpy(uargs->argv[0], cmd);
+		
+		stat(uargs->argv[0], &stat_buf); 
+		int fd = S_ISREG(stat_buf.st_mode);
+
+	   	if(fd == 1)
+	   	{
+			pid_t pid = fork(); 
+			
+			  if(pid == 0)
+			  {
+				  char *out_args[] = {"", NULL}; 
+				  int out = open(uargs->argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0600);
+				   
+				  close(STDOUT_FILENO);
+				  
+				  dup(out);	
+				  close(out); 
+				  
+				  execv(uargs->argv[0], out_args);
+	
+				  free(cmd);
+				  uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
+				  strcpy(uargs->argv[0], cmdC);
+				  exit(0);
+			
+			  }else if(pid > 0){
+				  waitpid(pid, NULL, 0);
+			  }else{
+				  printf("error message");
+			  } 
+			  
+		   break;
+	   	}
+	
+	   	pch = strtok(NULL, ":");
+	   	free(cmd);
+	   }   
+	}
+	
+	
    /* input redirection */ 
    if (strcmp(uargs->argv[i], "<")==0)
    { 
@@ -602,9 +671,9 @@ void my_io(UserArgs* uargs, int i)
 	   	strcpy(uargs->argv[0], cmd);
 		
 		stat(uargs->argv[0], &stat_buf); 
-		int fd = S_ISREG(stat_buf.st_mode);
+		int fd2 = S_ISREG(stat_buf.st_mode);
 
-	   	if(fd == 1)
+	   	if(fd2 == 1)
 	   	{
 			pid_t pid2 = fork(); 
 			
