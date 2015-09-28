@@ -16,6 +16,7 @@ Steps taken to solve problem
 5. Added handling for environmental variables 
 6. Developed process to run external commands and background processes using execv
 7. Used fork() and dup on file descriptors to redirect input and output
+8. Used S_ISREG to test if path names are correct 
 
 ============================ 
 Assumptions 
@@ -24,15 +25,6 @@ Assumptions
 It is assumed that no more than three pipes will appear in a single line. We do not expect that we will have to handle globs, regular expressions, special characters, quotes, and escaped characters. It is also 
 expected that the user input will be no more than two hundred and fifty five characters, that pipes and I/O redirection will not occur together and that multiple redirections of the same type will not appear. We 
 assume that we will not need to implement auto-complete and that there will be no need for support of built in commands that are not specified. 
-
-============================ 
-System calls 
-============================
-
-============================ 
-Problems 
-============================
-
 
 ============================ 
 Known Bugs 
@@ -61,6 +53,9 @@ Justin Duhaime
 ============================ 
 Log 
 ============================
+
+9/28/15
+Finished handling for output redirection. Fixed bug where S_ISREG was returning 1 after first run. 
 
 9/27/15
 Started writing handling for output redirection

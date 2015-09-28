@@ -573,10 +573,6 @@ void my_io(UserArgs* uargs, int i)
    /* output redirection */ 
    if (strcmp(uargs->argv[i], ">")==0)
    { 
-	   char * real_cmd = uargs->argv[0];
-		
-	   struct stat stat_buf;
-		
 	   /* loop to get a string with ALL $PATH variables */
 	   char * pch = NULL;
 	   char * cmd = NULL;
@@ -591,6 +587,8 @@ void my_io(UserArgs* uargs, int i)
 	   pch = strtok(path, ":");
 	   while (pch != NULL)
 	   {
+		struct stat stat_buf = {0};   
+		
 	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
    	   	strcpy(cmd, pch);
 	   	strcat(cmd, "/");
@@ -602,11 +600,11 @@ void my_io(UserArgs* uargs, int i)
 	   	strcpy(uargs->argv[0], cmd);
 		
 		stat(uargs->argv[0], &stat_buf); 
-		int fd = S_ISREG(stat_buf.st_mode);
+		int fd = S_ISREG(stat_buf.st_mode); 
 
-	   	if(fd == 1)
+	   	if((fd != 0) || stat(uargs->argv[1],&stat_buf) >= 0)
 	   	{
-			pid_t pid = fork(); 
+		   pid_t pid = fork(); 
 			
 			  if(pid == 0)
 			  {
@@ -619,7 +617,8 @@ void my_io(UserArgs* uargs, int i)
 				  close(out); 
 				  
 				  execv(uargs->argv[0], out_args);
-	
+				  	
+				  free(uargs->argv[0]);
 				  free(cmd);
 				  uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
 				  strcpy(uargs->argv[0], cmdC);
@@ -631,21 +630,20 @@ void my_io(UserArgs* uargs, int i)
 				  printf("error message");
 			  } 
 			  
+			 
 		   break;
 	   	}
-	
-	   	pch = strtok(NULL, ":");
-	   	free(cmd);
+	 
+		pch = strtok(NULL, ":");
+		free(cmd); 
+	   	
 	   }   
 	}
 	
 	
    /* input redirection */ 
    if (strcmp(uargs->argv[i], "<")==0)
-   { 
-
-	   struct stat stat_buf;
-		
+   { 		
 	   /* loop to get a string with ALL $PATH variables */
 	   char * pch = NULL;
 	   char * cmd = NULL;
@@ -660,6 +658,8 @@ void my_io(UserArgs* uargs, int i)
 	   pch = strtok(path, ":");
 	   while (pch != NULL)
 	   {
+		struct stat stat_buf = {0};   
+		   
 	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
    	   	strcpy(cmd, pch);
 	   	strcat(cmd, "/");
@@ -669,7 +669,7 @@ void my_io(UserArgs* uargs, int i)
 	   	free(uargs->argv[0]);
 	   	uargs->argv[0] = (char*)malloc(strlen(cmd)+1);
 	   	strcpy(uargs->argv[0], cmd);
-		
+			
 		stat(uargs->argv[0], &stat_buf); 
 		int fd2 = S_ISREG(stat_buf.st_mode);
 
