@@ -639,9 +639,14 @@ void my_pipe(UserArgs* line)
 void backgroundProcess(UserArgs* line, int i)
 {
 	/*	TODO: store processes in queue	*/
-	int pid1, pid2;
-	if(i == 0){
-		return; 
+	int it, pid1, pid2;
+        if(i == 0 && line->argc > 1){
+                for(it = 1; it<line->argc; it++){
+                        line->argv[it-1] = line->argv[it];
+                }
+                (line->argc)--;
+                my_execute(line); 
+                return;
 	}else if(i == line->argc-1) {
             (line->argc)--;
 	    line->argv[line->argc] = NULL;
