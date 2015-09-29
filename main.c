@@ -325,9 +325,9 @@ int my_execute(UserArgs* uargs)
    int i, pid1, pid2;
    int proc = 0;
    char* path;
-   char c, buffer[256];
+   char ch, buffer[256];
    struct timeval time;
-   
+   FILE * process = NULL;
 	/* Check Background processing and piping */
    for (i = 0; i < uargs->argc; i++){
 	if (uargs->argv[i][0] == '|'){
@@ -341,7 +341,6 @@ int my_execute(UserArgs* uargs)
                 return 0;
         }
    }
-
    if (strcmp(uargs->argv[0], "exit")==0)
    {
 	if (uargs->argc == 1){
@@ -414,18 +413,24 @@ int my_execute(UserArgs* uargs)
         	}
         	(uargs->argc)--;      
         	uargs->argv[uargs->argc] = NULL;
-
-
 		pid1 = fork();
         	if(pid1 == 0) {
-                	my_execute(uargs);
+			sprintf(buffer, "/proc/%d/limits",(int) getpid());
+                	process = fopen(buffer, "r");
+			if(process == NULL){
+				fprintf(stderr, "ERROR: limits: process cannot be accessed/found\n");
+			}else {
+            			my_execute(uargs);
+			
+				ch = fgetc(process);
+            			while(ch != EOF) {
+                			fputc(ch, stdout);
+                			ch = fgetc(process);
+            			}
+			}
                 	exit(-1);
         	}
         	wait(&pid1);		
-		
-		sprintf(buffer, "/proc/%dlimits",pid1);
-		printf("%s\n", buffer);
-
 	}
 	return 0;
    }
@@ -675,7 +680,6 @@ void my_pipe(UserArgs* uargs, int i)
 					char buf;
 					ssize_t nbytes;
 					int child[2];
-
 					
 					if (pipe(fds) == -1) {
 						perror("pipe");
@@ -771,3 +775,4 @@ void printArgs(UserArgs* args){
     }
 }
 /* =============================================== */
+
