@@ -7,7 +7,6 @@
 #include <sys/time.h>
 #include <time.h>
 #include <fcntl.h>
-
 typedef struct {
    char* argv[80];
    int argc;
@@ -16,7 +15,6 @@ typedef struct dirList {
     char* pathName;
     struct dirList* next;
 } Directory;
-
 char* dirString(Directory* root);
 char* getWord(char* lineCpy, int num);
 char* my_read();
@@ -32,9 +30,7 @@ void printArgs(UserArgs* args);
 void pushDir(Directory* root, char* dir);
 UserArgs* my_env(char* line);
 UserArgs* my_parse(char* line);
-
 /* =============================================== */
-
 int main()
 {
    UserArgs* userArgs;
@@ -47,7 +43,9 @@ int main()
 
     line =  my_read();
 	userArgs = my_parse(line);
-	exit = my_execute(userArgs);
+	if(userArgs->argc > 0){
+		exit = my_execute(userArgs);
+	}
 	my_free(line, userArgs);
    }
 	
@@ -412,9 +410,6 @@ int my_execute(UserArgs* uargs)
         return 0;
 
    }else if(strcmp(uargs->argv[0], "clear") == 0){
-	/* Source:
-stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-c-c
-	*/
    	fprintf(stdout, "\033[2J\033[1;1H");
         rewind(stdout);
         return 0;
@@ -449,7 +444,9 @@ stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-
         }
 	sprintf(buffer, "/proc/%s", uargs->argv[1]);
         proc = fopen(buffer, "r");
-
+        return 0;
+   }else if(strcmp(uargs->argv[0], "limits")==0){
+	
         if(proc == NULL) {
 	    fprintf(stderr, "ERROR: viewproc: cannot access proc/%s: No such file or directory.\n",
 	    uargs->argv[1]);
@@ -463,7 +460,7 @@ stackoverflow.com/questions/1348563/clearing-output-of-a-terminal-program-linux-
 
 	return 0;
    }
-   
+
    if (!contains(uargs, '<', '>', '|', '&'))
    {
 	   parse_cmd(uargs);
@@ -491,7 +488,7 @@ void my_redir(UserArgs* line)
         if (line->argv[i][0] == '<' || line->argv[i][0] == '>')
 		{
 			my_io(line, i);
-			return 0; 
+			return;
 		}
 		if (line->argv[i][0] == '|')
 		{
@@ -499,7 +496,8 @@ void my_redir(UserArgs* line)
 		}
 		if (line->argv[i][0] == '&')
 		{
-			my_zombie(line);
+			backgroundProcess(line, i);
+			return;
 		}
    }
 }
@@ -509,8 +507,7 @@ void my_redir(UserArgs* line)
 void parse_cmd(UserArgs* uargs)
 {
 	int status;
-	pid_t pid = fork();
-	
+	pid_t pid = fork();	
 	
 	if (pid == -1)
 	{
@@ -541,16 +538,13 @@ void parse_cmd(UserArgs* uargs)
 	   	strcpy(uargs->argv[0], cmd);
 
 	   	if (execv(uargs->argv[0], uargs->argv) != -1)
-	   	{
-		   
+	   	{		   
 		   free(uargs->argv[0]);
 		   free(cmd);
 		   uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
-		   strcpy(uargs->argv[0], cmdC);
-		   
+		   strcpy(uargs->argv[0], cmdC);	   
 		   break; 
 	   	}
-	
 	   	pch = strtok(NULL, ":");
 	   	free(cmd);
 	   }
@@ -612,7 +606,6 @@ void my_io(UserArgs* uargs, int i)
 				  int out = open(uargs->argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0600);
 				   
 				  close(STDOUT_FILENO);
-				  
 				  dup(out);	
 				  close(out); 
 				  
@@ -623,7 +616,6 @@ void my_io(UserArgs* uargs, int i)
 				  uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
 				  strcpy(uargs->argv[0], cmdC);
 				  exit(0);
-			
 			  }else if(pid > 0){
 				  waitpid(pid, NULL, 0);
 			  }else{
@@ -675,15 +667,13 @@ void my_io(UserArgs* uargs, int i)
 
 	   	if(fd2 == 1)
 	   	{
-			pid_t pid2 = fork(); 
-			
+			pid_t pid2 = fork(); 			
 			  if(pid2 == 0)
 			  {
 				  char *more_args[] = {uargs->argv[0], NULL}; 
 				  int in = open(uargs->argv[i + 1], O_RDONLY);
 				  
-				  close(STDIN_FILENO);
-				  
+				  close(STDIN_FILENO); 
 				  dup(in);	
 				  close(in);
 				  
@@ -694,17 +684,13 @@ void my_io(UserArgs* uargs, int i)
 				  uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
 				  strcpy(uargs->argv[0], cmdC);
 				  exit(0);
-				 
-				 
 			  }else if(pid2 > 0){
 				  waitpid(pid2, NULL, 0);
 			  }else{
 				  printf("error message");
 			  }
-			  
 		   break;
 	   	}
-	
 	   	pch = strtok(NULL, ":");
 	   	free(cmd);
 	   }   
@@ -720,9 +706,42 @@ void my_pipe(UserArgs* line)
 
 /* =============================================== */
 
-void my_zombie(UserArgs* line)
+void backgroundProcess(UserArgs* line, int i)
 {
-	
+	int it, pid1, pid2, proc=0;
+	if(i == 0 && line->argc > 1){
+		for(it = 1; it<line->argc; it++){
+			line->argv[it-1] = line->argv[it];
+		}
+		(line->argc)--;
+		my_execute(line); 
+		return;
+	}else if(i == line->argc-1) {
+            (line->argc)--;
+	    line->argv[line->argc] = NULL;
+            
+            pid1 = fork();
+            if(pid1 == 0) {
+                setsid();
+                pid2 = fork();
+		proc++;
+                if(pid2 == 0){
+		    fprintf(stdout, "[%d]\t", proc-1);
+                    fprintf(stdout,"PID: [%d]\n",(int) getpid());
+                    my_execute(line);
+		    fprintf(stdout, "[%d]+\t", proc-1);
+		    printArgs(line);	
+
+                    exit(-1);
+                }
+                wait(&pid2);
+		proc--;
+                exit(-1);
+            }
+            wait(&pid1);
+        }else{
+            fprintf(stderr, "ERROR: Incorrect placement of &\n");
+        }
 }
 
 /* =============================================== */
@@ -758,9 +777,11 @@ void printArgs(UserArgs* args){
    int i;
    for(i = 0; i<80; i++) {
 	if(args->argv[i] != '\0'){
+	    if(i>0){ printf(" "); }
             printf("%s",args->argv[i]);
 	    printf("%s"," ");
 	}else{
+	    printf("\n");
 	    return;
 	}
     }
