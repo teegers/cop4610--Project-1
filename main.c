@@ -322,7 +322,7 @@ char* parsePath(char* arg) {
 int my_execute(UserArgs* uargs)
 {
    double t1,t2;
-   int i = 0;
+   int i, pid1, pid2;
    int proc = 0;
    char* path;
    char c, buffer[256];
@@ -402,10 +402,28 @@ int my_execute(UserArgs* uargs)
 	printf("\n");
         return 0;
    }else if(strcmp(uargs->argv[0], "limits")==0){
+        if(uargs->argc < 2) {
+		fprintf(stderr, "ERROR: no command argument found\n");
+		return 0;
+        }else{
+		for(i = 1; i < uargs->argc; i++) {
+        	        strcpy(uargs->argv[i-1], uargs->argv[i]);
+        	}
+        	(uargs->argc)--;      
+        	uargs->argv[uargs->argc] = NULL;
 
 
+		pid1 = fork();
+        	if(pid1 == 0) {
+                	my_execute(uargs);
+                	exit(-1);
+        	}
+        	wait(&pid1);		
+		
+		sprintf(buffer, "/proc/%dlimits",pid1);
+		printf("%s\n", buffer);
 
-
+	}
 	return 0;
    }
 	/* Check I/O */
@@ -448,8 +466,7 @@ void parse_cmd(UserArgs* uargs)
 	   	free(uargs->argv[0]);
 	   	uargs->argv[0] = (char*)malloc(strlen(cmd)+1);
 	   	strcpy(uargs->argv[0], cmd);
-	   	if (execv(uargs->argv[0], uargs->argv) != -1)
-	   	{		   
+	   	if (execv(uargs->argv[0], uargs->argv) != -1){		   
 		   free(uargs->argv[0]);
 		   free(cmd);
 		   uargs->argv[0] = (char*)malloc(strlen(cmdC)+1);
@@ -471,8 +488,7 @@ void parse_cmd(UserArgs* uargs)
 void my_io(UserArgs* uargs, int i)
 {
    /* output redirection */ 
-   if (strcmp(uargs->argv[i], ">")==0)
-   { 
+   if (strcmp(uargs->argv[i], ">")==0){ 
 	   /* loop to get a string with ALL $PATH variables */
 	   char * pch = NULL;
 	   char * cmd = NULL;
@@ -536,8 +552,7 @@ void my_io(UserArgs* uargs, int i)
 	
 	
    /* input redirection */ 
-   if (strcmp(uargs->argv[i], "<")==0)
-   { 		
+   if (strcmp(uargs->argv[i], "<")==0){ 
 	   /* loop to get a string with ALL $PATH variables */
 	   char * pch = NULL;
 	   char * cmd = NULL;
@@ -548,8 +563,7 @@ void my_io(UserArgs* uargs, int i)
 	   strcpy(cmdC, uargs->argv[0]);
 	   int cmdLen = strlen(uargs->argv[0]);
 	   pch = strtok(path, ":");
-	   while (pch != NULL)
-	   {
+	   while (pch != NULL){
 		struct stat stat_buf = {0};   
 		   
 	   	cmd = (char*)malloc(strlen(pch)+cmdLen+2);
@@ -563,11 +577,9 @@ void my_io(UserArgs* uargs, int i)
 			
 		stat(uargs->argv[0], &stat_buf); 
 		int fd2 = S_ISREG(stat_buf.st_mode);
-	   	if(fd2 == 1)
-	   	{
+	   	if(fd2 == 1){
 			pid_t pid2 = fork(); 			
-			  if(pid2 == 0)
-			  {
+			  if(pid2 == 0){
 				  char *more_args[] = {uargs->argv[0], NULL}; 
 				  int in = open(uargs->argv[i + 1], O_RDONLY);
 				  
@@ -602,7 +614,7 @@ void my_pipe(UserArgs* line)
 /* =============================================== */
 void backgroundProcess(UserArgs* line, int i, int proc)
 {
-	int it, pid1, pid2;
+	int it, pid1;
 	if(i == 0 && line->argc > 1){
 		for(it = 1; it<line->argc; it++){
 			line->argv[it-1] = line->argv[it];
@@ -613,22 +625,15 @@ void backgroundProcess(UserArgs* line, int i, int proc)
 	}else if(i == line->argc-1) {
             (line->argc)--;
 	    line->argv[line->argc] = NULL;
-            
+            proc++;
             pid1 = fork();
             if(pid1 == 0) {
-                setsid();
-		proc++;
-                pid2 = fork();
-                if(pid2 == 0){
-		    fprintf(stdout, "[%d]\t", proc-1);
-                    fprintf(stdout,"[%d]\n",(int) getpid());
-                    my_execute(line);
-		    fprintf(stdout, "[%d]+\t", proc-1);
-		    printArgs(line);	
-		    proc--;
-                    exit(-1);
-                }
-                wait(&pid2);
+	     	fprintf(stdout, "[%d]\t", proc-1);
+                fprintf(stdout,"[%d]\n",(int) getpid());
+                my_execute(line);
+                fprintf(stdout, "[%d]+\t", proc-1);
+	        printArgs(line);	
+	        proc--;
                 exit(-1);
             }
             wait(&pid1);
