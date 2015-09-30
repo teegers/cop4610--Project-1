@@ -421,16 +421,19 @@ int my_execute(UserArgs* uargs)
 				fprintf(stderr, "ERROR: limits: process cannot be accessed/found\n");
 			}else {
             			my_execute(uargs);
-			
-				ch = fgetc(process);
+				i=0;
             			while(ch != EOF) {
-                			fputc(ch, stdout);
+					if((i == 2)||(i == 7)||(i == 8)||(i == 12)){ 
+						fputc(ch, stdout); 
+					}
                 			ch = fgetc(process);
+					if(ch == '\n'){ i++; }
             			}
 			}
                 	exit(-1);
         	}
-        	wait(&pid1);		
+        	wait(&pid1);	
+		fputc('\n', stdout);	
 	}
 	return 0;
    }
@@ -490,7 +493,7 @@ void parse_cmd(UserArgs* uargs)
 	}
 	
 	/* if no command is found */
-   /* fprintf(stderr, "Command not found.\n");*/
+	fprintf(stderr, "Command not found.\n");
 }
 /* =============================================== */
 void my_io(UserArgs* uargs, int i)
@@ -765,11 +768,15 @@ void printArgs(UserArgs* args){
    int i;
    for(i = 0; i<80; i++) {
 	if(args->argv[i] != '\0'){
-	    if(i>0){ printf(" "); }
+	    if(i>0){ 
+		printf(" "); 
+	    }else{ 
+		printf("["); 
+	    }
             printf("%s",args->argv[i]);
 	    printf("%s"," ");
 	}else{
-	    printf("\n");
+	    printf("]\n");
 	    return;
 	}
     }
